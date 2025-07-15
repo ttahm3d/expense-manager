@@ -24,24 +24,30 @@ router.post("/signin", async (req, res) => {
   if (!validation.success) {
     return res.status(400).json({
       message: "Invalid input data",
-      error: JSON.parse(validation.error),
+      error: JSON.parse(validation?.error),
     });
   }
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      return res.status(401).json({ message: "Invalid password" });
+    const isPasswordValid = await user.validatePassword(password);
+    if (!isPasswordValid) {
+      return res
+        .status(401)
+        .json({ message: "Please enter the correct password" });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "2h",
-    });
+    const token = await jwt.sign(
+      { id: user._id, name: user.name },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "2h",
+      }
+    );
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -49,7 +55,7 @@ router.post("/signin", async (req, res) => {
     });
     return res.status(200).json({ message: "Signin Successful", token });
   } catch (error) {
-    return res.status(400).json({ message: "Invalid input data" });
+    return res.status(500).json({ message: "Internal server error", error });
   }
 });
 
@@ -73,12 +79,12 @@ router.post("/signup", async (req, res) => {
       password,
       parseInt(process.env.PASSWORD_SALT_ROUNDS)
     );
-    const newUser = User.create({
+    const newUser = await User.create({
       name,
       email,
       password: hashedPassword,
     });
-    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: newUser._id, name }, process.env.JWT_SECRET, {
       expiresIn: "2h",
     });
     res.cookie("token", token, {
@@ -86,7 +92,9 @@ router.post("/signup", async (req, res) => {
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
     });
-    return res.status(201).json(newUser);
+    return res
+      .status(201)
+      .json({ message: "User created successfully", token });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
