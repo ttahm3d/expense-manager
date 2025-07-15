@@ -8,6 +8,7 @@
  */
 import { Router } from "express";
 import Project from "../models/project.js";
+import Transaction from "../models/transaction.js";
 import zod from "zod";
 
 const projectSchema = zod.object({
@@ -135,6 +136,27 @@ router.delete("/delete/:projectId", async (req, res) => {
     }
     return res.status(200).json({
       message: "Project deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      error: JSON.stringify(error),
+    });
+  }
+});
+
+router.get("/get-transactions-of-project/:projectId", async (req, res) => {
+  const projectId = req.params.projectId;
+  if (!projectId) {
+    return res.status(400).json({ message: "Project ID is required" });
+  }
+  try {
+    const transactions = await Transaction.find({ project: projectId })
+      .populate("addedBy", "name")
+      .populate("paidBy", "name");
+    return res.status(200).json({
+      message: "Transactions fetched successfully",
+      transactions,
     });
   } catch (error) {
     return res.status(500).json({

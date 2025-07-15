@@ -37,7 +37,10 @@ const transactionSchema = new mongoose.Schema({
       validator: async function (userId) {
         if (!this.project) return false;
         const project = await mongoose.model("Project").findById(this.project);
-        return project.members.includes(userId);
+        return (
+          project.members.includes(userId) ||
+          project.createdBy.toString() === userId.toString()
+        );
       },
       message: "User must be a member of the project",
     },

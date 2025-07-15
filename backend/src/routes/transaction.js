@@ -10,11 +10,11 @@ const transactionSchema = zod.object({
   type: zod.enum(["incoming", "outgoing"]),
   description: zod.string().min(1).trim(),
   paidBy: zod.string(),
-  project: zod.string(),
 });
 
-router.post("/add-transaction/:projectId", async (req, res) => {
+router.post("/create/:projectId", async (req, res) => {
   const projectId = req.params.projectId;
+  console.log("Creating transaction for project:", projectId);
   if (!projectId) {
     return res.status(400).json({ message: "Project ID is required" });
   }
@@ -39,7 +39,6 @@ router.post("/add-transaction/:projectId", async (req, res) => {
     }
     return res.status(201).json({
       message: "Transaction added successfully",
-      transaction: newTransaction,
     });
   } catch (error) {
     return res.status(500).json({
@@ -49,7 +48,7 @@ router.post("/add-transaction/:projectId", async (req, res) => {
   }
 });
 
-router.delete("/delete-transaction/:transactionId", async (req, res) => {
+router.delete("/delete/:transactionId", async (req, res) => {
   const transactionId = req.params.transactionId;
   if (!transactionId) {
     return res.status(400).json({ message: "Transaction ID is required" });
@@ -61,27 +60,6 @@ router.delete("/delete-transaction/:transactionId", async (req, res) => {
     }
     return res.status(200).json({
       message: "Transaction deleted successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: "Internal server error",
-      error: JSON.stringify(error),
-    });
-  }
-});
-
-router.get("/get-all-transactions/:projectId", async (req, res) => {
-  const projectId = req.params.projectId;
-  if (!projectId) {
-    return res.status(400).json({ message: "Project ID is required" });
-  }
-  try {
-    const transactions = await Transaction.find({ project: projectId })
-      .populate("addedBy", "name")
-      .populate("paidBy", "name");
-    return res.status(200).json({
-      message: "Transactions fetched successfully",
-      transactions,
     });
   } catch (error) {
     return res.status(500).json({

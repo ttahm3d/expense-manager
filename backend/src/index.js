@@ -2,6 +2,7 @@ import express from "express";
 import authRoutes from "./routes/auth.js";
 import projectRoutes from "./routes/projects.js";
 import userRoutes from "./routes/user.js";
+import transactionRoutes from "./routes/transaction.js";
 import cors from "cors";
 import "dotenv/config";
 import connectToDb from "./db/index.js";
@@ -17,6 +18,8 @@ connectToDb();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/project", authMiddleware, projectRoutes);
+app.use("/api/user", authMiddleware, userRoutes);
+app.use("/api/transaction", authMiddleware, transactionRoutes);
 
 app.get("/health-check", (req, res) => {
   res.status(200).json({
